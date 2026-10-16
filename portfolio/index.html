@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>otto</title>
+  <meta name="description" content="Portfolio of otto (sekaikx), builder of Lifeline, a resupply planner for disaster response.">
+  <meta property="og:title" content="otto">
+  <meta property="og:description" content="Builder of Lifeline, a resupply planner that compares truck, drone and airdrop delivery on real terrain.">
+  <meta property="og:image" content="assets/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#f3f5f1">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@500;600&family=Barlow+Semi+Condensed:wght@500;600&display=swap">
+  <link rel="stylesheet" href="assets/css/site.css">
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top">
+    <a class="top__name" href="https://github.com/sekaikx">sekaikx</a>
+    <nav aria-label="Sections">
+      <a href="#lifeline">Lifeline</a>
+      <a href="#side-projects">Side projects</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero__intro">
+        <h1 id="hero-title">otto</h1>
+        <p class="hero__lede">I build the software I wish existed. Right now that’s Lifeline, which works out how to get supplies to places the roads no longer reach: by truck, by drone or by parachute.</p>
+        <p class="hero__actions">
+          <a class="button" href="#lifeline">See Lifeline</a>
+          <a class="button button--quiet" href="https://github.com/sekaikx">GitHub</a>
+        </p>
+      </div>
+
+      <figure class="map" id="map">
+        <svg class="map__svg" viewBox="0 0 728 495" preserveAspectRatio="xMidYMid slice" role="img"
+             aria-label="Shaded relief map of the hills around Gorkha, Nepal, with a truck route by road from Gorkha to Kyamuntar, a drone flight to Birenchok and an airdrop over Deurali.">
+          <image href="assets/map/relief.webp" width="728" height="495" preserveAspectRatio="none"/>
+          <image href="assets/map/lines.svg" width="728" height="495" preserveAspectRatio="none"/>
+          <g class="map__overlay"></g>
+        </svg>
+
+        <div class="map__legend" aria-hidden="true">
+          <p class="legend__row"><svg viewBox="0 0 40 10"><path class="sym-truck-case" d="M2 5H38"/><path class="sym-truck" d="M2 5H38"/></svg> Truck, by road to Kyamuntar</p>
+          <p class="legend__row"><svg viewBox="0 0 40 10"><path class="sym-drone" d="M2 5H38"/></svg> Drone to Birenchok</p>
+          <p class="legend__row"><svg viewBox="0 0 40 10"><path class="sym-air" d="M2 5H24"/><ellipse class="sym-zone" cx="32" cy="5" rx="6" ry="3.4"/></svg> Airdrop over Deurali</p>
+          <div class="scale"><span class="scale__bar"></span><span class="scale__label">2 km</span></div>
+        </div>
+
+        <figcaption>The hills around Gorkha, Nepal, where Lifeline’s worked example runs. Relief and streams from AWS Terrain Tiles, roads and villages from OpenStreetMap.</figcaption>
+      </figure>
+    </section>
+
+    <section class="lifeline" id="lifeline" aria-labelledby="lifeline-title">
+      <div class="wrap">
+        <div class="lifeline__head">
+          <img class="lifeline__icon" src="assets/lifeline/icon.svg" alt="" width="72" height="72">
+          <div>
+            <h2 id="lifeline-title">Lifeline</h2>
+            <p class="lead">A desktop planner for disaster response. Pick a place and it loads the real terrain, roads and wind forecast, compares truck, drone and airdrop for every request, and writes a schedule a planner can defend.</p>
+            <p class="fineprint">Rust engine, Tauri desktop app and a command line. Free for Windows, macOS and Linux, MIT licence, no account or telemetry.</p>
+            <p class="actions">
+              <a class="button" href="https://github.com/sekaikx/lifeline/releases/latest">Download Lifeline</a>
+              <a class="button button--quiet" href="https://github.com/sekaikx/lifeline">Read the source</a>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <figure class="shot shot--wide">
+        <img src="assets/lifeline/plan.webp" width="1600" height="1000" loading="lazy" decoding="async"
+             alt="Lifeline planning seven deliveries around Gorkha: truck routes, a drone flight and an airdrop on real terrain, with the plan summary on the right.">
+        <figcaption>Seven deliveries around Gorkha. The panel on the right leads with how much of the demand arrives, then whether the critical requests make their deadlines.</figcaption>
+      </figure>
+
+      <div class="wrap">
+        <div class="split">
+          <div class="prose">
+            <h3>Truck, drone or airdrop, compared for every request</h3>
+            <p>Every request gets a truck, a drone and an airdrop option, each with its time, number of trips, chance of arriving intact and cost. The scheduler serves requests by priority and deadline, and takes the cheapest option that is safe enough and on time. If none is, it takes the earliest, then the safest. It’s a rule a person can follow and argue with, not a black box.</p>
+            <p>Danger is part of the terrain model. Mark a checkpoint or hostile position and Lifeline works out what it can see from the ground, at drone height and at drop height, and routes around it.</p>
+          </div>
+          <table class="modes">
+            <caption class="sr-only">How each delivery mode is planned</caption>
+            <thead><tr><th scope="col"></th><th scope="col">Path</th><th scope="col">Limited by</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Truck</th><td>OpenStreetMap roads, off-road legs where no road reaches</td><td>Road class, gradient, closed roads</td></tr>
+              <tr><th scope="row">Drone</th><td>Straight or detoured flight over the terrain</td><td>Battery, wind, radio line of sight</td></tr>
+              <tr><th scope="row">Airdrop</th><td>Aircraft track to a computed release point</td><td>Wind, release timing, drop zone size</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="wrap">
+        <div class="gallery">
+          <figure class="shot">
+            <img src="assets/lifeline/flood.webp" width="1600" height="1000" loading="lazy" decoding="async" alt="Flooded land detected around Dadu, Pakistan, closing the roads that cross it.">
+            <figcaption>The flood check on Dadu, Pakistan, September 2022. Newly flooded land closes the roads that cross it and the plan is recomputed.</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="assets/lifeline/airdrop-lab.webp" width="1600" height="1000" loading="lazy" decoding="async" alt="Airdrop lab showing a parachute descent in 3D with the wind profile.">
+            <figcaption>The airdrop lab: release point and descent through the forecast wind, with the landing spread from a Monte Carlo run.</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="assets/lifeline/plan-request.webp" width="1600" height="1000" loading="lazy" decoding="async" alt="Side-by-side comparison of truck, drone and airdrop options for one request.">
+            <figcaption>One request, three options side by side, with alternative truck routes that trade time against exposure.</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="assets/lifeline/satellite.webp" width="1600" height="1000" loading="lazy" decoding="async" alt="Sentinel-2 satellite imagery under the plan.">
+            <figcaption>Sentinel-2 imagery under the plan, loaded once and kept for offline use.</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="wrap">
+        <div class="split split--flip">
+          <div class="prose">
+            <h3>Finding floods in satellite images</h3>
+            <p>Lifeline reads a month of Sentinel-2 images, decides which pixels are water and subtracts the water that is always there. What’s left is new water, and trucks can’t cross it.</p>
+            <p>A small U-Net I trained on hand-labelled flood scenes runs on the device through ONNX. On scenes it never saw, it beats the standard water index, and it holds up in a region it wasn’t trained on.</p>
+          </div>
+          <table class="scores">
+            <caption>Water IoU on held-out, hand-labelled scenes. Higher is better.</caption>
+            <thead><tr><th scope="col">Detector</th><th scope="col">Test set</th><th scope="col">Bolivia, unseen</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Water index</th><td>0.728</td><td>0.611</td></tr>
+              <tr><th scope="row">Water index, tuned</th><td>0.787</td><td>0.703</td></tr>
+              <tr class="is-best"><th scope="row">U-Net</th><td>0.858</td><td>0.811</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="terminal-block">
+          <div class="prose">
+            <h3>The same engine on the command line</h3>
+            <p>The default Gorkha scenario has seven requests, three observed areas over the paved roads, a washed-out crossing and the live wind forecast. Planning it takes well under a second.</p>
+          </div>
+          <pre class="terminal" tabindex="0" aria-label="Output of lifeline plan for the Gorkha scenario"><code><span class="t-prompt">$</span> lifeline plan -s gorkha.json
+
+id   request                                kg priority  mode      trips  arrives    due P(arrive)
+R1   Field clinic, Pandrung                350 critical  Truck         1     2:07   3:00     99.3%
+R2   Water point, Kyamuntar               6000 high      Truck         2     2:31  10:00     91.9%
+R3   Shelter site, Parajuli Gaun          2500 routine   Truck         1     7:10  24:00     99.3%
+R4   Blood and vaccines, Birenchok          12 critical  Drone         1     0:09   1:30     99.8%
+R5   School kitchen, Srinathkot            900 routine   Truck         1     6:11  18:00     99.3%
+R6   Relay post                             25 high      Drone         2     0:04   4:00    100.0%
+R7   Mountain village                     1500 critical  Aircraft      1     0:44   1:30     99.2%
+
+expected delivered 10764 of 11287 kg (10764 kg on time), critical on time 3/3, last arrival 7:10, cost 9520</code></pre>
+          <p class="fineprint">Under it: drone power from momentum theory, parachute descent integrated with RK4 through the standard atmosphere, risk-weighted routing over the road graph, and 76 tests that check the physics against exact solutions.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="side" id="side-projects" aria-labelledby="side-title">
+      <div class="wrap">
+        <h2 id="side-title">Side projects</h2>
+        <p class="lead">What I make between Lifeline releases. Some are finished, most are how I learn something new.</p>
+        <div class="side__grid">
+          <article>
+            <h3>Games</h3>
+            <p>Small games in Godot, from quiet places to wander around in to physics toys and a strategy prototype.</p>
+            <p class="with">Godot, GDScript</p>
+          </article>
+          <article>
+            <h3>Software</h3>
+            <p>Desktop and command-line tools I wanted for myself. If I do a chore twice, I usually end up writing the program that does it.</p>
+            <p class="with">Rust, TypeScript, Tauri</p>
+          </article>
+          <article>
+            <h3>Websites</h3>
+            <p>Sites for my own projects and for people I know. Mostly hand-written HTML and CSS that loads fast.</p>
+            <p class="with">HTML, CSS, JavaScript, Vercel</p>
+          </article>
+          <article>
+            <h3>Reverse engineering</h3>
+            <p>Taking apps, file formats and web APIs apart to see how they really work, then rebuilding the parts I need.</p>
+            <p class="with">Whatever the target was built with</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="year" id="year" aria-labelledby="year-title" hidden>
+      <div class="wrap">
+        <h2 id="year-title">A year of commits</h2>
+        <p class="lead year__summary"></p>
+        <figure class="profile">
+          <svg class="profile__svg" role="img" aria-labelledby="year-title"></svg>
+          <figcaption>Contributions per week over the last year, drawn as an elevation profile.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="contact" id="contact" aria-labelledby="contact-title">
+      <div class="wrap">
+        <h2 id="contact-title">Get in touch</h2>
+        <p class="lead">If you work in disaster response or logistics and want to try Lifeline on a real area, or you just want to build something together, write to me.</p>
+        <p class="contact__mail"><a href="mailto:sekaikx@gmail.com">sekaikx@gmail.com</a></p>
+        <p class="contact__more"><a href="https://github.com/sekaikx">github.com/sekaikx</a></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <p>Set in Barlow. Map relief from AWS Terrain Tiles; roads and places © OpenStreetMap contributors. Lifeline screenshots are from the app itself.</p>
+    </div>
+  </footer>
+
+  <script src="assets/map/overlay.js"></script>
+  <script src="assets/data/contributions.js"></script>
+  <script src="assets/js/site.js"></script>
+</body>
+</html>
