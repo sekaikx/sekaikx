@@ -12,7 +12,7 @@
 
 Just building things I wish existed. Desktop software, small games, websites, and sometimes taking other people’s software apart to see how it works.
 
-Right now I’m deep in **Lifeline**, a resupply planner for disaster response. It has its own page on my [portfolio](https://sekaikx.vercel.app).
+**Open for freelance work and collaborations.** Services, selected work and a project brief form are on my [portfolio](https://sekaikx.vercel.app). Latest project: **Lifeline**, a resupply planner for disaster response.
 
 ## Stack
 

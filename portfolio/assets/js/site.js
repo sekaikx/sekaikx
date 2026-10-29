@@ -1,4 +1,4 @@
-/* otto — portfolio. Draws the hero map overlay and the contribution profile. No dependencies. */
+/* otto — portfolio. Draws the hero terrain, the contribution profile and wires up the brief form. No dependencies. */
 (function () {
   'use strict';
 
@@ -9,101 +9,83 @@
     if (parent) parent.appendChild(n);
     return n;
   };
-  const line = pts => 'M' + pts.map(p => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------------------------------------------------------------- hero map */
-  function heroMap(data) {
-    const svg = document.querySelector('.map__svg');
-    const g = svg && svg.querySelector('.map__overlay');
-    if (!g || !data) return;
-    const defs = el('defs', {}, svg);
+  /* ---------------------------------------------------------------- hero terrain */
+  // A made-up landscape: a few seeded hills, contoured with marching squares, and one
+  // route across it from idea to release. Redrawn on resize so it always fills the hero.
+  function terrain() {
+    const svg = document.querySelector('.terrain');
+    if (!svg) return;
 
-    // a dashed line cannot draw itself in with a dash offset, so it is revealed through a mask instead
-    let maskId = 0;
-    function revealed(d, cls, timing) {
-      const id = 'reveal-' + (++maskId);
-      const m = el('mask', { id, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: data.width, height: data.height }, defs);
-      const p = el('path', { d, class: 'draw', fill: 'none', stroke: '#fff', 'stroke-width': 8, 'stroke-linecap': 'round' }, m);
-      setTiming(p, timing);
-      el('path', { d, class: cls, mask: `url(#${id})` }, g);
-      return p;
+    let seed = 7;
+    const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const hills = Array.from({ length: 11 }, () => ({
+      x: 0.25 + rand() * 0.85, y: rand() * 1.1 - 0.05, r: 0.08 + rand() * 0.2, h: (rand() < 0.2 ? -0.6 : 1) * (0.5 + rand())
+    }));
+    const height = (x, y) => {
+      let z = 0.25 * x + 0.12 * Math.sin(6 * x + 3 * y);
+      for (const h of hills) z += h.h * Math.exp(-((x - h.x) ** 2 + ((y - h.y) * 0.9) ** 2) / (2 * h.r * h.r));
+      return z;
+    };
+
+    function draw() {
+      const w = svg.clientWidth, h = svg.clientHeight;
+      if (!w || !h) return;
+      svg.textContent = '';
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      const s = Math.max(w, h * 1.6);  // landscape units: 1 = this many pixels
+      const step = 6, cols = Math.ceil(w / step) + 1, rows = Math.ceil(h / step) + 1;
+      const z = new Float32Array(cols * rows);
+      let lo = Infinity, hi = -Infinity;
+      for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+        const v = height(i * step / s, j * step / s);
+        z[j * cols + i] = v; if (v < lo) lo = v; if (v > hi) hi = v;
+      }
+      const levels = 26, gap = (hi - lo) / levels;
+      for (let l = 1; l < levels; l++) {
+        const t = lo + l * gap, segs = [];
+        for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
+          const a = z[j * cols + i], b = z[j * cols + i + 1], c = z[(j + 1) * cols + i + 1], d = z[(j + 1) * cols + i];
+          const x0 = i * step, y0 = j * step, pts = [];
+          if ((a < t) !== (b < t)) pts.push([x0 + step * (t - a) / (b - a), y0]);
+          if ((b < t) !== (c < t)) pts.push([x0 + step, y0 + step * (t - b) / (c - b)]);
+          if ((c < t) !== (d < t)) pts.push([x0 + step * (t - d) / (c - d), y0 + step]);
+          if ((d < t) !== (a < t)) pts.push([x0, y0 + step * (t - a) / (d - a)]);
+          if (pts.length >= 2) segs.push(`M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}L${pts[1][0].toFixed(1)} ${pts[1][1].toFixed(1)}`);
+          if (pts.length === 4) segs.push(`M${pts[2][0].toFixed(1)} ${pts[2][1].toFixed(1)}L${pts[3][0].toFixed(1)} ${pts[3][1].toFixed(1)}`);
+        }
+        el('path', { d: segs.join(''), class: l % 5 === 0 ? 'c c--index' : 'c' }, svg);
+      }
+
+      // the route: idea, prototype, release, as a smooth line through three waypoints
+      if (w < 1100) return;  // keep the route clear of the text
+      const wp = [[0.7, 0.8], [0.8, 0.46], [0.92, 0.2]].map(([x, y]) => [x * w, y * h]);
+      const [p0, p1, p2] = wp;
+      const d = `M${p0[0]} ${p0[1]} C${p0[0] + 60} ${p0[1] - 20} ${p1[0] - 70} ${p1[1] + 80} ${p1[0]} ${p1[1]} S${p2[0] - 110} ${p2[1] + 30} ${p2[0]} ${p2[1]}`;
+      el('path', { d, class: 'route-case' }, svg);
+      const route = el('path', { d, class: 'route' }, svg);
+      route.style.setProperty('--len', route.getTotalLength().toFixed(1));
+      [['Idea', 0.4], ['Prototype', 1.3], ['Shipped', 2.4]].forEach(([name, delay], i) => {
+        const [x, y] = wp[i];
+        const dot = i === 2
+          ? el('rect', { x: x - 6, y: y - 6, width: 12, height: 12, class: 'wp wp--end later' }, svg)
+          : el('circle', { cx: x, cy: y, r: 6, class: 'wp later' }, svg);
+        const t = el('text', { x: x + 14, y: y + 5, class: 'later' }, svg);
+        t.textContent = name.toUpperCase();
+        dot.style.setProperty('--delay', delay + 's');
+        t.style.setProperty('--delay', delay + 's');
+      });
     }
-    function setTiming(node, { delay, dur }) {
-      node.style.setProperty('--delay', delay + 's');
-      if (dur) node.style.setProperty('--dur', dur + 's');
-    }
 
-    const [dx, dy] = data.depot;
-
-    // truck, along the real road network
-    const truckD = line(data.truck);
-    el('path', { d: truckD, class: 'case' }, g);
-    const truck = el('path', { d: truckD, class: 'truck draw' }, g);
-    setTiming(truck, { delay: 0.35, dur: 2.4 });
-
-    // drone, straight to Birenchok
-    const [, droneTo] = data.drone;
-    revealed(line(data.drone), 'drone', { delay: 0.9, dur: 0.9 });
-
-    // airdrop: aircraft track from the depot's airstrip, release upwind of the zone, drift down
-    const [tx, ty] = data.airdrop.target;
-    const vx = tx - dx, vy = ty - dy, len = Math.hypot(vx, vy), ux = vx / len, uy = vy / len;
-    const release = [tx - ux * 26, ty - uy * 26];
-    const trackEnd = [tx + ux * 34, ty + uy * 34];
-    revealed(line([[dx, dy], trackEnd]), 'air', { delay: 1.5, dur: 1.5 });
-    const fall = `M${release[0].toFixed(1)} ${release[1].toFixed(1)} Q${(release[0] + ux * 6 - uy * 10).toFixed(1)} ${(release[1] + uy * 6 + ux * 10).toFixed(1)} ${tx} ${ty}`;
-    revealed(fall, 'fall', { delay: 2.7, dur: 0.8 });
-    const angle = Math.atan2(uy, ux) * 180 / Math.PI;
-    const zone = el('ellipse', { cx: tx, cy: ty, rx: 11, ry: 6.5, class: 'zone later', transform: `rotate(${angle.toFixed(1)} ${tx} ${ty})` }, g);
-    setTiming(zone, { delay: 3.2 });
-    const x = el('path', { d: `M${release[0] - 4} ${release[1] - 4} l8 8 M${release[0] + 4} ${release[1] - 4} l-8 8`, class: 'release later' }, g);
-    setTiming(x, { delay: 2.6 });
-
-    // places
-    const ends = new Set(['Kyamuntar', 'Birenchok', 'Deurali']);
-    data.labels.forEach(l => {
-      if (l.name === 'Gorkha') return;
-      el('circle', { cx: l.x, cy: l.y, r: ends.has(l.name) ? 3.2 : 1.7, class: ends.has(l.name) ? 'stop' : 'dot' }, g);
-    });
-    el('rect', { x: dx - 4, y: dy - 4, width: 8, height: 8, class: 'depot' }, g);
-
-    const texts = [];
-    function label(text, x, y, cls, anchor) {
-      const t = el('text', { x, y, class: cls || '', 'text-anchor': anchor || 'start' }, g);
-      t.textContent = text;
-      texts.push({ t, x, y, anchor });
-      return t;
-    }
-    data.labels.forEach(l => {
-      const end = ends.has(l.name);
-      if (l.name === 'Gorkha') label('Gorkha', l.x + 8, l.y - 8, 'town');
-      else if (l.name === 'Birenchok') label(l.name, l.x - 7, l.y + 4, '', 'end');
-      else if (l.x > data.width - 90) label(l.name, l.x - 7, l.y - 7, end ? '' : 'minor', 'end');
-      else label(l.name, l.x + 7, l.y + 4, end ? '' : 'minor');
-    });
-    const kyamuntar = data.labels.find(l => l.name === 'Kyamuntar');
-    label('6 t of water', kyamuntar.x - 7, kyamuntar.y - 22, 'note', 'end');
-    label('12 kg, blood and vaccines', droneTo[0] + 7, droneTo[1] + 18, 'note');
-    label('release', release[0] + 7, release[1] - 6, 'note');
-
-    // keep strokes and type at a constant screen size whatever the map's scale
-    const scaleBar = document.querySelector('.scale__bar');
-    function fit() {
-      const r = svg.getBoundingClientRect();
-      const k = Math.max(r.width / data.width, r.height / data.height) || 1;
-      g.style.setProperty('--k', k.toFixed(4));
-      if (scaleBar) scaleBar.style.setProperty('--scale-px', (2000 / data.metresPerUnit * k).toFixed(1) + 'px');
-    }
-    new ResizeObserver(fit).observe(svg);
-    fit();
-
-    // dash lengths for the draw-in, in map units
-    g.querySelectorAll('.draw').forEach(p => p.style.setProperty('--len', p.getTotalLength().toFixed(1)));
-    defs.querySelectorAll('.draw').forEach(p => p.style.setProperty('--len', p.getTotalLength().toFixed(1)));
-    const start = () => { g.classList.add('is-live'); svg.querySelectorAll('.draw').forEach(p => p.classList.add('go')); };
-    const relief = new Image();
-    relief.onload = relief.onerror = () => requestAnimationFrame(start);
-    relief.src = 'assets/map/relief.webp';
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    let lastW = 0, lastH = 0;
+    new ResizeObserver(() => {
+      const w = svg.clientWidth, h = svg.clientHeight;
+      if (Math.abs(w - lastW) < 2 && Math.abs(h - lastH) < 120) return;  // ignore mobile URL bar jitter
+      lastW = w; lastH = h;
+      draw();
+    }).observe(svg);
   }
 
   /* ---------------------------------------------------------------- contribution profile */
@@ -121,7 +103,7 @@
     const peak = weeks.reduce((a, b) => b.count > a.count ? b : a);
     const month = d => new Date(d + 'T12:00:00').toLocaleString('en-GB', { month: 'short' });
     section.querySelector('.year__summary').textContent =
-      `${total.toLocaleString('en-GB')} contributions in the last year, ${peak.count} of them in the busiest week.`;
+      `${total.toLocaleString('en-GB')} contributions on GitHub in the last year, ${peak.count} of them in the busiest week.`;
     section.hidden = false;
 
     const svg = section.querySelector('.profile__svg');
@@ -159,6 +141,51 @@
     new ResizeObserver(draw).observe(svg);
   }
 
-  heroMap(window.HERO_MAP);
+  /* ---------------------------------------------------------------- brief form */
+  // No backend: the form becomes a pre-filled email in the visitor's own mail app.
+  function brief() {
+    const form = document.querySelector('.brief');
+    if (!form) return;
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const f = new FormData(form);
+      const kinds = f.getAll('kind');
+      const name = (f.get('name') || '').trim();
+      const subject = `Project enquiry${kinds.length ? ': ' + kinds.join(', ') : ''}`;
+      const body = [
+        `Hi otto,`, '',
+        (f.get('message') || '').trim(), '',
+        kinds.length ? `Type: ${kinds.join(', ')}` : '',
+        f.get('budget') ? `Budget: ${f.get('budget')}` : '',
+        '', name
+      ].filter((line, i, all) => line !== '' || all[i - 1] !== '').join('\n');
+      location.href = `mailto:sekaikx@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    });
+  }
+
+  /* ---------------------------------------------------------------- chrome */
+  function chrome() {
+    const top = document.querySelector('.top');
+    const onScroll = () => top.classList.toggle('is-stuck', scrollY > 8);
+    addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    if (reduced || !('IntersectionObserver' in window)) return;
+    const items = document.querySelectorAll('.section-head, .service, .case, .mini, .steps li, .brief');
+    const io = new IntersectionObserver(entries => entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      en.target.classList.add('is-in');
+      io.unobserve(en.target);
+    }), { rootMargin: '0px 0px -8% 0px' });
+    items.forEach((n, i) => {
+      n.classList.add('reveal');
+      n.style.transitionDelay = (i % 3) * 70 + 'ms';
+      io.observe(n);
+    });
+  }
+
+  terrain();
   profile(window.PORTFOLIO_CONTRIBUTIONS);
+  brief();
+  chrome();
 })();

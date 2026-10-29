@@ -1,4 +1,4 @@
-// Renders portfolio/assets/og.jpg, the 1200x630 social preview, from the live page.
+// Renders portfolio/assets/og.jpg, the 1200x630 social preview, from the live page's hero.
 //
 // Needs Playwright and a running copy of the site:
 //   python3 -m http.server 8090 --directory portfolio   (in one terminal)
@@ -17,9 +17,9 @@ const url = process.argv[2] || 'http://localhost:8090/';
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
-await page.emulateMedia({ reducedMotion: 'reduce' });
+await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' });
 await page.goto(url, { waitUntil: 'networkidle' });
-await page.addStyleTag({ content: '.top{display:none}.map__svg{height:630px!important}.map__legend,.map figcaption,.hero__actions{display:none}' });
+await page.addStyleTag({ content: '.top,.facts,.actions{display:none!important}.hero{height:630px;padding-top:70px;border:0}' });
 await page.waitForTimeout(400);
 await page.screenshot({ path: path.join(HERE, '..', 'assets', 'og.jpg'), type: 'jpeg', quality: 85, clip: { x: 0, y: 0, width: 1200, height: 630 } });
 await browser.close();
